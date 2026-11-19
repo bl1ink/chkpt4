@@ -19,6 +19,7 @@ public class Reports {
 
    public static void popularRobot()
    {
+        //julianday turns dates into a number of days, so helpful
         String sql = "select r.Robot_ID, rb.Model, count(*) as Times_Rented, "
                    + "sum(julianday(r.End_Date) - julianday(r.Start_Date)) as Total_Days_Rented "
                    + "from Rental r join Robot rb on rb.Robot_ID=r.Robot_ID "

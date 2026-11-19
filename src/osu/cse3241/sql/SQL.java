@@ -75,7 +75,7 @@ public class SQL {
     			System.out.print("\n");
         	}
         	rs.close();
-        	ps.close();
+        	sql.close();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
