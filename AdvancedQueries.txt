@@ -1,0 +1,129 @@
+-- Q10: List customer names and their total number of robot rentals.
+SELECT C.First_Name, C.Last_Name,
+       COUNT(R.Rental_ID) AS Total_Robots_Rented
+FROM Customer AS C
+LEFT JOIN Rental AS R
+    ON C.Customer_ID = R.Customer_ID
+GROUP BY C.Customer_ID, C.First_Name, C.Last_Name;
+
+-- Q11: List customers who rented more robots than the average customer.
+SELECT C.First_Name, C.Last_Name, C.Email
+FROM Customer AS C
+JOIN Rental AS R
+    ON C.Customer_ID = R.Customer_ID
+GROUP BY C.Customer_ID, C.First_Name, C.Last_Name, C.Email
+HAVING COUNT(R.Rental_ID) > (
+    SELECT AVG(T.Total_Rentals)
+    FROM (
+        SELECT C2.Customer_ID,
+               COUNT(R2.Rental_ID) AS Total_Rentals
+        FROM Customer AS C2
+        LEFT JOIN Rental AS R2
+            ON C2.Customer_ID = R2.Customer_ID
+        GROUP BY C2.Customer_ID
+    ) AS T
+);
+
+-- Q12: List robots and their rental counts, from most to least rented.
+SELECT R.Robot_ID, R.Model,
+       COUNT(L.Rental_ID) AS Total_Rentals
+FROM Robot AS R
+LEFT JOIN Rental AS L
+    ON R.Robot_ID = L.Robot_ID
+GROUP BY R.Robot_ID, R.Model
+ORDER BY Total_Rentals DESC;
+
+-- Q13: List vehicles and total mileage, ordered by robots delivered.
+SELECT V.Vehicle_ID, V.Registration,
+       ROUND(SUM(T.Distance_Miles), 1) AS Total_Miles,
+       SUM(CASE
+           WHEN T.Trip_Type = 'Delivery' THEN 1
+           ELSE 0
+       END) AS Robots_Delivered
+FROM Vehicle AS V
+LEFT JOIN Trip AS T
+    ON V.Vehicle_ID = T.Vehicle_ID
+GROUP BY V.Vehicle_ID, V.Registration
+ORDER BY Robots_Delivered DESC;
+
+-- Q14: Find the most rented manufacturer, including ties.
+WITH Manufacturer_Counts AS (
+    SELECT M.Manufacturer,
+           COUNT(L.Rental_ID) AS Total_Rentals
+    FROM Robot_Model AS M
+    JOIN Robot AS R
+        ON M.Model = R.Model
+    JOIN Rental AS L
+        ON R.Robot_ID = L.Robot_ID
+    GROUP BY M.Manufacturer
+)
+SELECT Manufacturer, Total_Rentals
+FROM Manufacturer_Counts
+WHERE Total_Rentals = (
+    SELECT MAX(Total_Rentals)
+    FROM Manufacturer_Counts
+);
+
+-- Q15: List robots by total rented days, including rental counts.
+SELECT R.Robot_ID, R.Model,
+       COALESCE(
+           SUM(JULIANDAY(L.End_Date) - JULIANDAY(L.Start_Date)),
+           0
+       ) AS Total_Rented_Days,
+       COUNT(L.Rental_ID) AS Total_Rentals
+FROM Robot AS R
+LEFT JOIN Rental AS L
+    ON R.Robot_ID = L.Robot_ID
+GROUP BY R.Robot_ID, R.Model
+ORDER BY Total_Rented_Days DESC;
+
+-- Q16: Find renting customers who never rented a most-demanded robot.
+WITH Robot_Counts AS (
+    SELECT Robot_ID, COUNT(*) AS Total_Rentals
+    FROM Rental
+    GROUP BY Robot_ID
+),
+Most_Demanded AS (
+    SELECT Robot_ID
+    FROM Robot_Counts
+    WHERE Total_Rentals = (
+        SELECT MAX(Total_Rentals)
+        FROM Robot_Counts
+    )
+)
+SELECT C.First_Name, C.Last_Name, C.Phone_Number
+FROM Customer AS C
+WHERE EXISTS (
+    SELECT 1
+    FROM Rental AS R
+    WHERE R.Customer_ID = C.Customer_ID
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM Rental AS R
+    JOIN Most_Demanded AS M
+        ON R.Robot_ID = M.Robot_ID
+    WHERE R.Customer_ID = C.Customer_ID
+);
+
+-- Q17: Find manufacturers rented by above-average-rental customers.
+WITH Customer_Counts AS (
+    SELECT C.Customer_ID,
+           COUNT(R.Rental_ID) AS Total_Rentals
+    FROM Customer AS C
+    LEFT JOIN Rental AS R
+        ON C.Customer_ID = R.Customer_ID
+    GROUP BY C.Customer_ID
+)
+SELECT DISTINCT M.Manufacturer
+FROM Customer_Counts AS C
+JOIN Rental AS L
+    ON C.Customer_ID = L.Customer_ID
+JOIN Robot AS R
+    ON L.Robot_ID = R.Robot_ID
+JOIN Robot_Model AS M
+    ON R.Model = M.Model
+WHERE C.Total_Rentals > (
+    SELECT AVG(Total_Rentals)
+    FROM Customer_Counts
+);
