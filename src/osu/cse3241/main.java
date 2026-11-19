@@ -8,10 +8,9 @@ import java.sql.SQLException;
 import java.sql.DriverManager;
 import java.sql.DatabaseMetaData;
 
-import osu.cse3241.options.Customer;
-import osu.cse3241.options.Robot;
-import osu.cse3241.utilities.Utilities;
+import osu.cse3241.options.*;
 import osu.cse3241.sql.*;
+import osu.cse3241.utilities.Utilities;
 
 public class main
 {
@@ -98,7 +97,9 @@ public class main
                 case 'P':
                     schedulePickup();
                     break;
-                case 'I':
+                case 'L':
+                    checkReports();
+                    break;
                 default:
                     System.out.println("Invalid input");
                     sleep(2); //sleeps for 2seconds
@@ -128,6 +129,7 @@ public class main
         System.out.println("press D, to schedule delivery of robot/s");
         System.out.println("press P, to schedule pick up of robot/s");
 
+        System.out.println("press L, to see a list of reports");
         //quit or reprint options
         System.out.println();
         System.out.println("press W, to reprint options");
@@ -268,5 +270,30 @@ public class main
         String time = s.nextLine();
 
         SQL_Transactions.sql_schedule_pickup(conn, customer_id, car_id, time, arr);
+    }
+
+    private static void checkReports()
+    {
+        System.out.println("press 1, for total robots rented by a customer");
+        System.out.println("press 2, for the most popular robot");
+        System.out.println("press 3, for the most popular manufacturer");
+        System.out.println("press 4, for the most popular driverless car");
+        System.out.println("press 5, for the customer who rented the most robots");
+        System.out.println("press 6, for robots by a manufacturer released before a year");
+        String input = s.nextLine().trim();
+        if (input.equals("1"))
+            Reports.rentingCheckouts();
+        else if (input.equals("2"))
+            Reports.popularRobot();
+        else if (input.equals("3"))
+            Reports.popularManufacturer();
+        else if (input.equals("4"))
+            Reports.popularCar();
+        else if (input.equals("5"))
+            Reports.robotsCheckedOut();
+        else if (input.equals("6"))
+            Reports.robotsByManufacturer();
+        else
+            System.out.println("Invalid input");
     }
 }
